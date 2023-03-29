@@ -44,10 +44,34 @@ class Checkout
       
     self
   end
+  
+  def check_for_and_apply_three_or_more_offer
+
+    count_three_or_more_products = @basket.select { |item|
+      item[:offer] == 'three_or_more' && item[:offer_applied] == false
+    }
+
+    return self if count_three_or_more_products.nil? || count_three_or_more_products.count < 3
+
+    three_or_more_product_code = count_three_or_more_products.first[:product_code]
+
+    @basket
+      .select { |item| item[:product_code] == three_or_more_product_code }
+      .reject { |item| item[:offer_applied] }
+      .each.with_index { |item, index|
+        item[:price] = item[:price] * 0.9
+        item[:offer_applied] = true
+      }
+
+    check_for_and_apply_three_or_more_offer
+
+    self
+  end
 
 
   def total
     check_for_and_apply_bogof_offer
+    check_for_and_apply_three_or_more_offer
     
     total = @basket.map { |item| item[:price] }.sum || 0
   end
